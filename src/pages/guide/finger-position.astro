@@ -1,0 +1,35 @@
+---
+import Base from "../../layouts/Base.astro";
+const title = "손가락 자리 — 2벌식 자판 손가락별 담당 글쇠 | 타자노트";
+const desc = "한글 2벌식 자판에서 손가락마다 어느 글쇠를 치는지 그림으로. 기본줄 ㅁㄴㅇㄹ·ㅓㅏㅣ와 Shift·쌍자음 치는 법.";
+---
+<Base title={title} desc={desc} path="/guide/finger-position">
+  <article>
+    <h1>손가락 자리</h1>
+    <p class="lead">손가락 색을 보고 담당 글쇠를 익히세요. 글쇠 아래 색 띠가 손가락입니다.</p>
+    <div class="kb" id="gkb"></div>
+    <div class="kb-legend"><span><i style="background:#c9a07a"></i>새끼</span><span><i style="background:#9bb7a2"></i>약지</span><span><i style="background:#d9a84a"></i>중지</span><span><i style="background:#b06a6a"></i>검지</span><span><i style="background:#b8b1a6"></i>엄지</span></div>
+
+    <h2>손가락별 담당 글쇠</h2>
+    <div class="tablewrap"><table>
+      <tr><th>손가락</th><th>왼손</th><th>오른손</th></tr>
+      <tr><td><b>새끼</b></td><td>ㅂ ㅁ ㅋ (Shift)</td><td>ㅔ ; / (Shift·Enter)</td></tr>
+      <tr><td><b>약지</b></td><td>ㅈ ㄴ ㅌ</td><td>ㅐ ㅣ .</td></tr>
+      <tr><td><b>중지</b></td><td>ㄷ ㅇ ㅊ</td><td>ㅑ ㅏ ,</td></tr>
+      <tr><td><b>검지</b></td><td>ㄱ ㄹ ㅍ · ㅅ ㅎ ㅠ</td><td>ㅛ ㅗ ㅜ · ㅕ ㅓ ㅡ</td></tr>
+      <tr><td><b>엄지</b></td><td colspan="2">띄어쓰기</td></tr>
+    </table></div>
+    <p>검지는 글쇠를 두 줄씩 맡습니다. 왼손 검지는 ㄹ에 두고 ㅎ·ㅅ·ㄱ·ㅍ·ㅠ까지, 오른손 검지는 ㅓ에 두고 ㅗ·ㅛ·ㅜ·ㅕ·ㅡ까지 뻗습니다. 자판에서 한글이 <b>왼쪽은 자음, 오른쪽은 모음</b>으로 갈라져 있어 두 손이 번갈아 움직이는 것이 2벌식의 특징입니다.</p>
+
+    <h2>Shift와 쌍자음</h2>
+    <p>ㅃ ㅉ ㄸ ㄲ ㅆ 은 모두 왼손 글쇠라서 <b>오른손 새끼로 오른쪽 Shift</b>를 누른 채 칩니다. ㅒ ㅖ 는 오른손 글쇠이므로 <b>왼손 새끼로 왼쪽 Shift</b>. 같은 손으로 Shift와 글쇠를 같이 누르면 손이 뒤틀리고 느려집니다.</p>
+
+    <h2>기본줄로 돌아오기</h2>
+    <p>어떤 글쇠를 치든 손가락은 기본줄(ㅁ ㄴ ㅇ ㄹ · ㅓ ㅏ ㅣ ;)로 돌아옵니다. 돌아오지 않으면 다음 글쇠의 거리 감각이 흐트러져 오타가 납니다. <a href="/position">자리 연습</a>에서 화면 자판이 다음 글쇠와 손가락 이름을 알려 주니, 처음 며칠은 그것만 보고 치세요.</p>
+  </article>
+  <script>
+    import { renderKeyboard, KEYBOARD_CSS } from "../../lib/keyboard.mjs";
+    const style = document.createElement("style"); style.textContent = KEYBOARD_CSS; document.head.appendChild(style);
+    renderKeyboard(document.getElementById("gkb"), { lang: "ko" });
+  </script>
+</Base>

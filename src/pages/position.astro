@@ -1,0 +1,166 @@
+---
+import Base from "../layouts/Base.astro";
+const title = "자리 연습 — 기본줄·윗줄·아랫줄·쌍자음 | 타자노트";
+const desc = "한글 2벌식 자판 자리 연습. 화면 자판이 다음 글쇠와 손가락을 알려 주고, 오타가 잦은 글쇠만 골라 연습할 수 있습니다.";
+---
+<Base title={title} desc={desc} path="/position">
+  <h1>자리 연습</h1>
+  <p class="lead">화면 자판이 다음 글쇠를 비춥니다. 자판을 보지 말고 화면만 보며 치세요.</p>
+
+  <div class="seg" id="lv" role="tablist" aria-label="단계">
+    <button type="button" data-lv="home" class="on">기본줄</button>
+    <button type="button" data-lv="top">윗줄</button>
+    <button type="button" data-lv="bottom">아랫줄</button>
+    <button type="button" data-lv="all">전체</button>
+    <button type="button" data-lv="shift">쌍자음</button>
+  </div>
+  <p class="hint" id="lvhint"></p>
+
+  <section class="ppaper">
+    <div class="pline" id="pline" aria-live="off"></div>
+    <div class="pstat"><span><b id="pcount">0</b>/<span id="ptotal">40</span></span><span><b id="pacc">100</b>%</span><span id="ptime">0:00</span></div>
+  </section>
+  <div class="kb" id="pkb"></div>
+  <div class="kb-legend"><span><i style="background:#c9a07a"></i>새끼</span><span><i style="background:#9bb7a2"></i>약지</span><span><i style="background:#d9a84a"></i>중지</span><span><i style="background:#b06a6a"></i>검지</span><span><i style="background:#b8b1a6"></i>엄지</span></div>
+  <p class="hint" id="pfinger">이 페이지를 누른 뒤 자판을 치면 바로 시작됩니다. 휴대폰이면 아래 칸을 눌러 자판을 여세요.</p>
+  <input id="pmobile" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="휴대폰·태블릿: 여기를 눌러 자판 열기" aria-label="입력">
+
+  <section id="pout" class="out" hidden>
+    <div class="top rscore">
+      <div class="rmascot" id="pmascot"></div>
+      <div><div class="cap" id="pcap">자리 연습</div><div class="big"><em id="pcpm">0</em><span class="unit">타/분</span></div><div class="sub" id="psub"></div></div>
+    </div>
+    <div class="rgrid"><div><b id="pracc">0%</b>정확도</div><div><b id="prtime">0:00</b>걸린 시간</div><div><b id="prmiss">0</b>틀린 글쇠</div></div>
+    <div class="rweak" id="pweak"></div>
+    <div class="actions"><button type="button" class="pri" id="pagain">한 번 더</button><button type="button" id="pnext">다음 단계</button></div>
+  </section>
+
+  <article>
+    <h2>자리 연습은 이렇게</h2>
+    <p><b>기본줄</b>(ㅁㄴㅇㄹ ㅗㅓㅏㅣ)에 두 손을 얹고, 검지가 ㄹ과 ㅓ 글쇠의 작은 돌기를 느끼게 두세요. 글쇠를 친 뒤 손가락은 늘 기본줄로 돌아옵니다. 40개를 다 치면 정확도와 타/분이 나오고, 틀린 글쇠가 있으면 어느 손가락 몫인지 알려 줍니다.</p>
+    <p>정확도가 <b>95%</b>를 넘기 전에는 다음 단계로 가지 마세요. 속도는 정확도가 붙은 다음에 저절로 따라옵니다.</p>
+    <p>낱말 연습이나 긴 글 필사 결과 화면에서 "이 글쇠만 자리 연습하기"를 누르면, 그 글쇠만 섞은 문제가 여기로 이어집니다.</p>
+  </article>
+
+  <style is:global>
+    .ppaper{background:var(--soft);border-radius:16px;padding:22px 18px 14px;margin-top:14px}
+    .pline{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:48px}
+    .pline i{font-style:normal;width:40px;height:44px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--ink);border:1px solid var(--line2)}
+    .pline i.done{background:transparent;color:var(--mut);border-color:transparent}
+    .pline i.bad{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .pline i.cur{border-color:var(--ink);box-shadow:0 2px 0 var(--ink)}
+    .pline i.sp{width:64px}.pline i.sp::before{content:"␣";color:var(--mut);font-weight:500}
+    .pline i.sp.bad::before{color:#fff}
+    .pstat{display:flex;gap:16px;justify-content:center;font-size:13px;color:var(--mut);font-weight:600;margin-top:14px}
+    .pstat b{color:var(--ink);font-size:15px;font-weight:800}
+    #pmobile{margin-top:10px;height:46px;font-size:15px}
+    @media (min-width:700px){#pmobile{display:none}}
+  </style>
+
+  <script>
+    import { KEY_JAMO, SHIFT_JAMO, JAMO_KEY, FINGER, FINGER_NAME } from "../lib/hangul.mjs";
+    import { renderKeyboard, highlight, press, KEYBOARD_CSS } from "../lib/keyboard.mjs";
+    import { addRun, load } from "../lib/record.mjs";
+    import { mascot } from "../lib/mascot.mjs";
+    const style = document.createElement("style"); style.textContent = KEYBOARD_CSS; document.head.appendChild(style);
+    const $ = (id) => document.getElementById(id);
+    const replay = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+
+    const LEVELS = {
+      home: { name: "기본줄", keys: ["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL"], hint: "ㅁ ㄴ ㅇ ㄹ ㅎ ㅗ ㅓ ㅏ ㅣ — 손을 얹는 줄. 여기가 집입니다." },
+      top: { name: "윗줄", keys: ["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"], hint: "ㅂ ㅈ ㄷ ㄱ ㅅ ㅛ ㅕ ㅑ ㅐ ㅔ — 손가락을 위로 뻗었다가 기본줄로 돌아옵니다." },
+      bottom: { name: "아랫줄", keys: ["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM"], hint: "ㅋ ㅌ ㅊ ㅍ ㅠ ㅜ ㅡ — 아래로 살짝 굽혔다가 돌아옵니다." },
+      all: { name: "전체", keys: Object.keys(KEY_JAMO), hint: "세 줄을 섞어서. 띄어쓰기도 섞입니다." },
+      shift: { name: "쌍자음", keys: Object.keys(SHIFT_JAMO), shift: true, hint: "ㅃ ㅉ ㄸ ㄲ ㅆ ㅒ ㅖ — 반대쪽 손 새끼손가락으로 Shift를 누른 채 칩니다." },
+    };
+    const COUNT = 40;
+    let lv = "home", custom = null, seq = [], i = 0, t0 = 0, timer = 0, miss = 0, errors = {}, done = false, waitShift = false;
+
+    const q = new URLSearchParams(location.search).get("keys");
+    if (q) { const ks = q.split(",").filter((c) => KEY_JAMO[c] || SHIFT_JAMO[c]); if (ks.length) custom = ks; }
+
+    function build() {
+      const L = LEVELS[lv];
+      const keys = custom || L.keys, useShift = !!L.shift || (custom && custom.some((c) => !KEY_JAMO[c]));
+      seq = [];
+      for (let k = 0; k < COUNT; k++) {
+        if (!useShift && lv === "all" && k % 6 === 5) { seq.push({ code: "Space", shift: false, ch: " " }); continue; }
+        const code = keys[Math.floor(Math.random() * keys.length)];
+        const shift = useShift && SHIFT_JAMO[code] ? (custom ? !KEY_JAMO[code] || Math.random() < .5 : true) : false;
+        seq.push({ code, shift, ch: shift ? SHIFT_JAMO[code] : KEY_JAMO[code] });
+      }
+      i = 0; t0 = 0; miss = 0; errors = {}; done = false; clearInterval(timer);
+      $("ptotal").textContent = COUNT; $("pcount").textContent = 0; $("pacc").textContent = 100; $("ptime").textContent = "0:00";
+      $("lvhint").textContent = custom ? `오타가 잦았던 글쇠 ${custom.map((c) => KEY_JAMO[c] || SHIFT_JAMO[c]).join(" · ")}만 섞어서 냅니다. 단계 버튼을 누르면 보통 연습으로 돌아갑니다.` : L.hint;
+      $("pout").hidden = true;
+      render();
+    }
+    function render() {
+      $("pline").innerHTML = seq.map((s, k) => `<i class="${k < i ? (s.bad ? "bad" : "done") : k === i ? "cur" : ""}${s.code === "Space" ? " sp" : ""}">${s.code === "Space" ? "" : s.ch}</i>`).join("");
+      const cur = seq[i];
+      highlight($("pkb"), cur?.code, cur?.shift);
+      if (cur) $("pfinger").textContent = cur.code === "Space" ? "띄어쓰기 — 엄지" : `${cur.ch} — ${FINGER_NAME[FINGER[cur.code]]}${cur.shift ? " + 반대쪽 Shift" : ""}`;
+      const el = $("pline"), c = el.children[i]; if (c) c.scrollIntoView?.({ block: "nearest" });
+    }
+    const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    function tick() { $("ptime").textContent = fmt((performance.now() - t0) / 1000); }
+    function hit(code, shift) {
+      if (done || !seq[i]) return;
+      if (!t0) { t0 = performance.now(); timer = setInterval(tick, 250); }
+      const cur = seq[i];
+      const ok = code === cur.code && (!!shift === cur.shift);
+      press($("pkb"), code, ok);
+      if (ok) { i++; $("pcount").textContent = i; }
+      else { miss++; cur.bad = true; errors[cur.code] = (errors[cur.code] || 0) + 1; replay($("pline").children[i], "shake"); }
+      $("pacc").textContent = Math.round(i / Math.max(1, i + miss) * 100);
+      render();
+      if (i >= seq.length) finish();
+    }
+    function finish() {
+      done = true; clearInterval(timer);
+      const secs = Math.max(1, (performance.now() - t0) / 1000), cpm = Math.round(seq.length / (secs / 60)), acc = Math.round(seq.length / (seq.length + miss) * 100);
+      const { best, isBest } = addRun({ mode: "position", cpm, acc, strokes: seq.length, secs: Math.round(secs), errors });
+      $("pout").hidden = false; replay($("pout"), "rise");
+      $("pmascot").innerHTML = mascot(acc >= 95 ? "happy" : acc < 80 ? "sad" : "idle", 84);
+      $("pcap").textContent = `자리 연습 · ${custom ? "약한 글쇠" : LEVELS[lv].name}`;
+      window.__fx?.countUp($("pcpm"), cpm, { dur: 800 });
+      $("psub").innerHTML = `<span id="pbest">${isBest ? (best ? `최고 기록 경신! (전 ${best}타)` : "첫 기록") : `이 기기 최고 ${best}타`}</span>`;
+      $("pracc").textContent = `${acc}%`; $("prtime").textContent = fmt(secs); $("prmiss").textContent = miss;
+      const weak = Object.entries(errors).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      $("pweak").innerHTML = weak.length
+        ? `틀린 글쇠: ${weak.map(([c, n]) => `<b>${KEY_JAMO[c]}${SHIFT_JAMO[c] ? "/" + SHIFT_JAMO[c] : ""} <small>${FINGER_NAME[FINGER[c]]} · ${n}번</small></b>`).join("")}<br><small>${acc >= 95 ? "다음 단계로 가도 됩니다." : "정확도 95%가 될 때까지 이 단계를 한 번 더."}</small>`
+        : `하나도 안 틀렸어요. <small>다음 단계로 가세요.</small>`;
+      if (isBest && best) setTimeout(() => { window.__fx?.mark($("pbest"), { type: "circle", color: "#8f6420", padding: [2, 6] }); window.__fx?.confetti({ particleCount: 60, spread: 60, origin: { x: .5, y: .4 }, colors: ["#8f6420", "#e0c48a", "#f7f1e4", "#2e7d4f", "#18181b"] }); }, 800);
+      $("pout").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // 실물 자판: event.code 로 판정(한/영 상태와 무관). 휴대폰: 입력칸의 자모를 역변환.
+    document.addEventListener("keydown", (e) => {
+      if (e.target === $("pmobile")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") return;
+      if (e.code === "Space") { e.preventDefault(); hit("Space", false); return; }
+      if (KEY_JAMO[e.code]) { e.preventDefault(); hit(e.code, e.shiftKey); }
+    });
+    $("pmobile").addEventListener("input", (e) => {
+      const v = e.target.value; if (!v) return;
+      const ch = [...v].pop(); e.target.value = "";
+      if (ch === " ") { hit("Space", false); return; }
+      const k = JAMO_KEY[ch]; if (k) hit(k.code, k.shift);
+      else { // 완성 글자로 조합된 경우 첫 자모만 본다(한 글쇠씩 치므로 드묾)
+        const c = ch.charCodeAt(0) - 0xac00; if (c >= 0) { const cho = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"[Math.floor(c / 588)]; const kk = JAMO_KEY[cho]; if (kk) hit(kk.code, kk.shift); }
+      }
+    });
+    for (const b of $("lv").querySelectorAll("button")) b.addEventListener("click", () => {
+      for (const x of $("lv").querySelectorAll("button")) x.classList.toggle("on", x === b);
+      lv = b.dataset.lv; custom = null; history.replaceState(null, "", location.pathname); build();
+    });
+    $("pagain").addEventListener("click", () => { build(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    $("pnext").addEventListener("click", () => {
+      const order = Object.keys(LEVELS); const n = order[(order.indexOf(lv) + 1) % order.length];
+      $("lv").querySelector(`[data-lv="${n}"]`).click(); window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    renderKeyboard($("pkb"), { lang: "ko" });
+    build();
+  </script>
+</Base>

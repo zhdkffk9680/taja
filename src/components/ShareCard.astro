@@ -1,0 +1,116 @@
+---
+// 결과 공유 카드 — 공용 부품. 정본은 C:\dev\shared\site-ui\parts\ShareCard.astro 이고 sync.mjs 가 각 사이트로 복사한다(직접 고치지 말 것).
+// 페이지 스크립트가 window.__shareCard(data) 를 부르면 1080×1350 PNG 를 그려 저장한다(웹 <a download> / 토스 window.__tossSave).
+//   data: { title, big, sub, lines, bigParts, link, decorate, foot }
+//   bigParts: [{t, color}] — 큰 글자를 조각별 색으로(예: 사주 8자 오행 색). 있으면 big 대신 쓴다.
+//   link: {url, text}      — "친구에게 도전 링크" 버튼. 토스판(html.toss)에서는 외부 링크 금지라 숨긴다. 링크엔 점수·결과 코드만.
+//   decorate(ctx, h)       — 사이트 전용 장식(마스코트·하트·오행 점). h = {W, H, color, font, svg(str,x,y,w,h), panel:{x,y,w,h}}. 비동기 가능.
+//                            글자가 차지하는 곳은 패널 왼쪽 위(제목·큰 글자·설명)이므로 장식은 오른쪽 위(x 640~980, y 130~430)나 아래쪽 띠에.
+// 외부 링크·QR 을 카드 안에 넣지 않는다(토스 규칙: 외부 유도 금지). 사이트 이름만 작게 적는다.
+const { brand = "결과", color = "#c8601f", file = "result.png" } = Astro.props;
+---
+<div class="actions" id="share-actions" hidden>
+  <button type="button" class="pri" id="save-card">결과 이미지 저장</button>
+  <button type="button" id="copy-text">결과 글로 복사</button>
+  <button type="button" id="share-link" hidden>친구에게 도전 링크</button>
+</div>
+<script is:inline define:vars={{ brand, color, file }}>
+  const W = 1080, H = 1350;
+  const PANEL = { x: 70, y: 90, w: 940, h: 1170 };
+  let last = null;
+  const toss = document.documentElement.classList.contains("toss");
+  const font = (w, s) => `${w} ${s}px "Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+
+  function wrap(ctx, text, maxW) {
+    const words = String(text).split(" "), lines = []; let cur = "";
+    for (const w of words) {
+      const t = (cur + " " + w).trim();
+      if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function rrect(x, X, Y, w, h, r) { x.beginPath(); x.roundRect(X, Y, w, h, r); }
+  // SVG 문자열을 캔버스에 그린다(마스코트 등)
+  async function svg(x, str, X, Y, w, h) {
+    const img = new Image();
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(str);
+    try { await img.decode(); x.drawImage(img, X, Y, w, h); } catch {}
+  }
+
+  async function draw({ title, big, sub, lines = [], bigParts, decorate, foot }) {
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d");
+    // 종이 바탕 + 아주 옅은 점 격자
+    x.fillStyle = "#f4f1ec"; x.fillRect(0, 0, W, H);
+    x.fillStyle = color; x.globalAlpha = .08;
+    for (let i = 40; i < W; i += 48) for (let j = 40; j < H; j += 48) { x.beginPath(); x.arc(i, j, 2.2, 0, Math.PI * 2); x.fill(); }
+    x.globalAlpha = 1;
+    // 흰 패널
+    rrect(x, PANEL.x, PANEL.y, PANEL.w, PANEL.h, 44); x.fillStyle = "#fff"; x.fill();
+    x.strokeStyle = "#e6e2da"; x.lineWidth = 2; x.stroke();
+    // 패널 위 색 띠
+    x.save(); rrect(x, PANEL.x, PANEL.y, PANEL.w, PANEL.h, 44); x.clip();
+    x.fillStyle = color; x.fillRect(PANEL.x, PANEL.y, PANEL.w, 14); x.restore();
+
+    const L = PANEL.x + 64;                 // 글자 왼쪽 선
+    let y = PANEL.y + 130;
+    x.fillStyle = color; x.font = font(600, 30); x.fillText(brand, L, y); y += 78;
+    x.fillStyle = "#6b6b73"; x.font = font(500, 40); x.fillText(title, L, y); y += 200;
+    x.font = font(700, 168);
+    if (bigParts && bigParts.length) {
+      let size = 168;
+      const width = () => bigParts.reduce((s, p) => s + x.measureText(p.t).width, 0);
+      while (size > 80 && (x.font = font(700, size), width() > PANEL.w - 128)) size -= 10;
+      let bx = L - 6;
+      for (const p of bigParts) { x.fillStyle = p.color || color; x.fillText(p.t, bx, y); bx += x.measureText(p.t).width; }
+    } else {
+      let size = 168; while (size > 80 && (x.font = font(700, size), x.measureText(big).width > 560)) size -= 10;
+      x.fillStyle = color; x.fillText(big, L - 6, y);
+    }
+    y += 118;
+    x.fillStyle = "#18181b"; x.font = font(650, 52);
+    for (const ln of wrap(x, sub, PANEL.w - 128)) { x.fillText(ln, L, y); y += 70; }
+    y += 34; x.fillStyle = "#52525b"; x.font = font(500, 36);
+    for (const l of lines) for (const ln of wrap(x, l, PANEL.w - 128)) { x.fillText(ln, L, y); y += 56; }
+    if (decorate) { try { await decorate(x, { W, H, color, font, svg: (s, X, Y, w, h) => svg(x, s, X, Y, w, h), panel: PANEL, wrap: (t, mw) => wrap(x, t, mw) }); } catch {} }
+    // 바닥
+    x.fillStyle = "#e6e2da"; x.fillRect(L, PANEL.y + PANEL.h - 120, PANEL.w - 128, 2);
+    x.fillStyle = "#8b8b93"; x.font = font(500, 28); x.fillText(foot || brand, L, PANEL.y + PANEL.h - 62);
+    return c;
+  }
+
+  function download(url, filename) {
+    if (window.__tossSave) {
+      const m = /^data:([^;]+);base64,(.*)$/.exec(url);
+      if (m) { window.__tossSave({ data: m[2], fileName: filename, mimeType: m[1] }); return; }
+    }
+    const a = document.createElement("a"); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  const $ = (id) => document.getElementById(id);
+  window.__shareCard = (data) => {
+    last = data; $("share-actions").hidden = !data;
+    $("share-link").hidden = toss || !(data && data.link);
+  };
+  const sv = $("save-card");
+  sv.addEventListener("click", async () => {
+    if (!last) return;
+    sv.disabled = true; sv.textContent = "그리는 중…";
+    try { download((await draw(last)).toDataURL("image/png"), file); } finally { sv.disabled = false; sv.textContent = "결과 이미지 저장"; }
+  });
+  const cp = $("copy-text");
+  cp.addEventListener("click", async () => {
+    if (!last) return;
+    const text = `${last.title}\n${last.big || (last.bigParts || []).map((p) => p.t).join("")} ${last.sub}\n${(last.lines || []).join("\n")}`;
+    try { await navigator.clipboard.writeText(text); cp.textContent = "복사됨!"; setTimeout(() => (cp.textContent = "결과 글로 복사"), 1200); } catch {}
+  });
+  const sl = $("share-link");
+  sl.addEventListener("click", async () => {
+    if (!last || !last.link) return;
+    const { url, text } = last.link;
+    if (navigator.share) { try { await navigator.share({ title: brand, text, url }); } catch {} return; }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); sl.textContent = "링크 복사됨!"; setTimeout(() => (sl.textContent = "친구에게 도전 링크"), 1200); } catch {}
+  });
+</script>

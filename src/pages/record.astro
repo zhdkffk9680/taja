@@ -1,0 +1,87 @@
+---
+import Base from "../layouts/Base.astro";
+const title = "내 기록 — 최고 타수·주간 연습량·약한 글쇠 | 타자노트";
+const desc = "모드별 최고 기록과 최근 연습, 주간 연습량, 오타가 잦은 글쇠 열지도. 기록은 이 기기의 브라우저에만 저장됩니다.";
+---
+<Base title={title} desc={desc} path="/record">
+  <h1>내 기록</h1>
+  <p class="lead">이 기기의 브라우저에만 저장됩니다. 다른 기기와는 공유되지 않아요.</p>
+
+  <section id="empty" class="note" hidden><b>아직 기록이 없어요.</b> <a href="/">오늘의 필사</a>나 <a href="/position">자리 연습</a>부터 한 판 해 보세요.</section>
+
+  <section id="has" hidden>
+    <div class="tcard"><div id="rmas"></div><div><b id="rline"></b><span id="rsub"></span></div></div>
+
+    <h2>모드별 최고 기록</h2>
+    <div class="best" id="best"></div>
+
+    <h2>최근 2주 연습량</h2>
+    <div class="week" id="week"></div>
+    <p class="hint">막대 하나가 하루, 높이는 그날 맞게 친 타수입니다.</p>
+
+    <h2>오타가 잦은 글쇠</h2>
+    <div class="kb" id="heat"></div>
+    <p class="hint">진할수록 오타가 많았던 글쇠. 누적 기록 기준입니다.</p>
+    <div id="weaklist" class="rweak"></div>
+
+    <h2>최근 연습</h2>
+    <div class="tablewrap"><table class="recent"><thead><tr><th>날짜</th><th>연습</th><th class="n">타/분 · 정확도</th></tr></thead><tbody id="recent"></tbody></table></div>
+
+    <div class="actions"><button type="button" id="reset">기록 지우기</button></div>
+  </section>
+
+  <style is:global>
+    .tcard{display:flex;gap:16px;align-items:center;background:var(--accent-bg);border-radius:18px;padding:18px 20px;margin:8px 0}
+    .tcard svg{display:block;width:64px;height:64px}
+    .tcard b{display:block;font-size:19px;letter-spacing:-.03em;line-height:1.3}
+    .tcard span{font-size:14px;color:var(--sub)}
+    .best{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+    .best div{background:var(--soft);border-radius:14px;padding:14px;font-size:13px;color:var(--mut);font-weight:600}
+    .best div b{display:block;font-size:24px;color:var(--ink);letter-spacing:-.03em;margin-top:4px}
+    .best div b small{font-size:13px;color:var(--mut);font-weight:600;margin-left:3px}
+    .week{display:flex;gap:4px;align-items:flex-end;height:120px;padding:0 2px;border-bottom:1px solid var(--line);margin:28px 0 26px}
+    .week div{flex:1;background:var(--accent-bg);border-radius:4px 4px 0 0;position:relative;min-height:3px}
+    .week div.on{background:var(--accent)}
+    .week div.today i{color:var(--ink);font-weight:800}
+    .week div i{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10px;color:var(--mut);font-style:normal}
+    .week div em{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:11px;font-style:normal;font-weight:700;color:var(--ink)}
+    table.recent{width:100%;border-collapse:collapse;font-size:14px}
+    table.recent th{font-size:12px;color:var(--mut);font-weight:600;text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}
+    table.recent td{padding:10px 4px;border-bottom:1px solid var(--line2);color:var(--sub)}
+    table.recent .n{text-align:right;white-space:nowrap}
+    table.recent td.n b{color:var(--ink)}
+    .kb{margin-top:6px}
+  </style>
+
+  <script>
+    import { load, save, bestOf, streak, weakKeys, MODES, todayStr } from "../lib/record.mjs";
+    import { renderKeyboard, KEYBOARD_CSS } from "../lib/keyboard.mjs";
+    import { KEY_JAMO, SHIFT_JAMO, FINGER, FINGER_NAME } from "../lib/hangul.mjs";
+    import { mascot } from "../lib/mascot.mjs";
+    const style = document.createElement("style"); style.textContent = KEYBOARD_CSS; document.head.appendChild(style);
+    const $ = (id) => document.getElementById(id);
+    const r = load();
+    if (!r.runs.length) { $("empty").hidden = false; }
+    else {
+      $("has").hidden = false;
+      const st = streak(r), total = Object.values(r.days).reduce((a, b) => a + b, 0), days = Object.keys(r.days).length;
+      $("rmas").innerHTML = mascot(st >= 3 ? "happy" : "idle", 64);
+      $("rline").textContent = st ? `${st}일 연속 연습 중` : "오늘은 아직 연습 전";
+      $("rsub").textContent = `지금까지 ${days}일 · ${total.toLocaleString()}타 · ${r.runs.length}판`;
+      $("best").innerHTML = Object.entries(MODES).map(([m, name]) => { const b = bestOf(r, m); return `<div>${name}<b>${b || "–"}${b ? "<small>타/분</small>" : ""}</b></div>`; }).join("");
+      // 최근 14일
+      const cells = []; const d = new Date(); d.setDate(d.getDate() - 13);
+      let max = 1; for (let i = 0; i < 14; i++) { const k = todayStr(d); cells.push({ k, v: r.days[k] || 0, day: d.getDate() }); max = Math.max(max, r.days[k] || 0); d.setDate(d.getDate() + 1); }
+      $("week").innerHTML = cells.map((c) => `<div class="${c.v ? "on" : ""}${c.k === todayStr() ? " today" : ""}" style="height:${Math.max(3, c.v / max * 100)}%">${c.v ? `<em>${c.v >= 1000 ? (c.v / 1000).toFixed(1) + "k" : c.v}</em>` : ""}<i>${c.day}</i></div>`).join("");
+      // 열지도
+      const weak = weakKeys(r, 5), maxW = Math.max(1, ...Object.values(r.weak));
+      const heat = {}; for (const [c, n] of Object.entries(r.weak)) heat[c] = n / maxW;
+      renderKeyboard($("heat"), { lang: "ko", heat });
+      $("weaklist").innerHTML = weak.length
+        ? `가장 잦은 오타: ${weak.map(([c, n]) => `<b>${KEY_JAMO[c] || c.replace("Key", "")}${SHIFT_JAMO[c] ? "/" + SHIFT_JAMO[c] : ""} <small>${FINGER_NAME[FINGER[c]] || ""} · ${n}번</small></b>`).join("")}<br><a href="/position?keys=${weak.filter(([c]) => KEY_JAMO[c]).map(([c]) => c).join(",")}">이 글쇠만 자리 연습하기 →</a>`
+        : "아직 오타 기록이 없어요.";
+      $("recent").innerHTML = [...r.runs].reverse().slice(0, 15).map((x) => `<tr><td>${x.d.slice(5).replace("-", ".")}</td><td>${MODES[x.mode] || x.mode}</td><td class="n"><b>${x.cpm}</b>타 · ${x.acc}%</td></tr>`).join("");
+      $("reset").addEventListener("click", () => { if (confirm("이 기기의 타자 기록을 모두 지울까요? 되돌릴 수 없습니다.")) { save({ runs: [], weak: {}, days: {} }); location.reload(); } });
+    }
+  </script>
+</Base>

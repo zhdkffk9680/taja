@@ -1,0 +1,51 @@
+---
+import Base from "../layouts/Base.astro";
+import Typer from "../components/Typer.astro";
+import texts from "../data/texts.json";
+const title = "긴 글 필사 — 시 한 편 타자 | 타자노트";
+const desc = "윤동주·김소월·이육사·한용운의 시를 한 편씩 따라 치는 긴 글 타자연습. 저작권 보호 기간이 끝난 작품만 씁니다.";
+const poems = texts.filter((t) => t.kind === "시"), essays = texts.filter((t) => t.kind !== "시");
+---
+<Base title={title} desc={desc} path="/long">
+  <h1>긴 글 필사</h1>
+  <p class="lead">한 편을 끝까지. 마지막 줄을 치면 작가와 발표 연도가 뜹니다.</p>
+
+  <section id="pick">
+    <h3 style="margin-top:8px">시</h3>
+    <div class="cards" id="plist">
+      {poems.map((t) => <button type="button" class="card tpick" data-id={t.id}><div><b>{t.title}</b><span>{t.author} · {t.year} · {t.lines.length}줄</span></div><i>›</i></button>)}
+    </div>
+    <h3>짧은 산문</h3>
+    <div class="cards">
+      {essays.map((t) => <button type="button" class="card tpick" data-id={t.id}><div><b>{t.title}</b><span>{t.author} · {t.lines.length}줄</span></div><i>›</i></button>)}
+    </div>
+  </section>
+
+  <Typer />
+
+  <article>
+    <h2>여기 있는 시는 마음 놓고 써도 되나요</h2>
+    <p>네. 시는 모두 <b>작가가 세상을 떠난 지 70년이 넘어 저작권 보호 기간이 끝난 작품</b>만 골랐습니다(윤동주 1945, 김소월 1934, 이육사 1944, 한용운 1944, 정지용 1950, 김영랑 1950). 작품마다 작가와 발표 연도를 적어 두었고, 산문은 직접 쓴 글입니다. 표기는 널리 읽히는 현대어 표기를 따랐습니다.</p>
+    <h2>필사가 타자에 좋은 이유</h2>
+    <p>긴 글은 손이 지치는 지점을 드러냅니다. 처음 세 줄은 빠르다가 여섯째 줄부터 오타가 늘면, 속도가 아니라 <b>자세와 힘 빼기</b>를 고쳐야 한다는 신호입니다. 결과 화면의 타/분은 전체 평균이라 이런 굴곡을 감추므로, 필사에서는 정확도를 먼저 보세요.</p>
+  </article>
+
+  <style is:global>
+    button.card{width:100%;border:0;text-align:left;font:inherit;cursor:pointer}
+    button.card:hover{background:var(--line2)}
+  </style>
+
+  <script>
+    import texts from "../data/texts.json";
+    const $ = (id) => document.getElementById(id);
+    const rival = Number((location.hash.match(/#t=(\d+)/) || [])[1]) || 0;
+    function go(t) {
+      $("pick").hidden = true;
+      const notes = t.lines.map((_, i) => i === t.lines.length - 1 ? `<b>${t.title}</b> · ${t.author}${t.year ? ", " + t.year : ""}. ${t.note || ""}` : null);
+      window.__typer.start({ mode: "long", title: t.title, sub: `${t.author} · ${t.lines.length}줄`, lines: t.lines, notes, rival, onNew: () => { $("pick").hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }, onQuit: () => { $("pick").hidden = false; } });
+      history.replaceState(null, "", `?text=${t.id}${location.hash}`);
+    }
+    for (const b of document.querySelectorAll(".tpick")) b.addEventListener("click", () => go(texts.find((t) => t.id === b.dataset.id)));
+    const pre = new URLSearchParams(location.search).get("text"); const t0 = texts.find((t) => t.id === pre); if (t0) go(t0);
+  </script>
+</Base>

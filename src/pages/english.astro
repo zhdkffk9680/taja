@@ -1,0 +1,39 @@
+---
+import Base from "../layouts/Base.astro";
+import Typer from "../components/Typer.astro";
+const title = "영어 타자연습 — 낱말·문장 | 타자노트";
+const desc = "영어 낱말과 문장 타자연습. 설치 없이 브라우저에서 바로, 끝나면 분당 타수와 정확도, 오타가 잦은 글쇠를 알려 줍니다.";
+---
+<Base title={title} desc={desc} path="/english">
+  <h1>영어</h1>
+  <p class="lead">한/영 키를 영어로 바꾼 뒤 시작하세요. 낱말은 띄어쓰기로, 문장은 Enter로 넘어갑니다.</p>
+
+  <section id="pick">
+    <div class="seg" id="kind"><button type="button" data-k="words" class="on">낱말 40개</button><button type="button" data-k="sentences">문장 10개</button></div>
+    <button type="button" class="go" id="estart" style="margin-top:14px">시작</button>
+    <p class="hint">영어 타수는 글자 하나가 1타입니다. 대문자는 Shift와 함께 치되 1타로 셉니다. 한글 타/분과 단순 비교는 되지 않습니다.</p>
+  </section>
+
+  <Typer />
+
+  <article>
+    <h2>영어 타자 참고</h2>
+    <p>영어 자판은 기본줄이 ASDF · JKL; 입니다. 한글과 손가락 배치는 같지만 자주 나오는 글쇠가 달라서(E·T·A·O·N), 한글이 빠르다고 영어까지 빠르지는 않습니다. 문장 연습에는 알파벳 26자가 모두 들어간 문장(팬그램)도 섞여 있어 손가락 전체를 고루 씁니다.</p>
+    <p>영어권에서 흔히 쓰는 WPM(분당 단어 수)은 5타를 한 단어로 칩니다. 타자노트의 영어 타/분을 5로 나누면 대략 WPM이 됩니다.</p>
+  </article>
+
+  <script>
+    import en from "../data/english.json";
+    const $ = (id) => document.getElementById(id);
+    let kind = "words";
+    for (const b of $("kind").querySelectorAll("button")) b.addEventListener("click", () => { for (const x of $("kind").querySelectorAll("button")) x.classList.toggle("on", x === b); kind = b.dataset.k; });
+    const rival = Number((location.hash.match(/#t=(\d+)/) || [])[1]) || 0;
+    const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    $("estart").addEventListener("click", () => {
+      const w = kind === "words";
+      const lines = shuffle(w ? [...new Set(en.words)] : en.sentences).slice(0, w ? 40 : 10);
+      $("pick").hidden = true;
+      window.__typer.start({ mode: "english", lang: "en", title: w ? "영어 낱말 40개" : "영어 문장 10개", sub: w ? "낱말 40개" : "문장 10개", lines, preview: w ? 4 : 1, rival, onNew: () => { $("pick").hidden = false; }, onQuit: () => { $("pick").hidden = false; } });
+    });
+  </script>
+</Base>

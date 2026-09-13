@@ -1,0 +1,161 @@
+---
+import Fx from "../components/Fx.astro";
+const { title, desc, path } = Astro.props;
+const canonical = new URL(path, Astro.site).toString();
+---
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content={desc}>
+<link rel="canonical" href={canonical}>
+<meta property="og:title" content={title}>
+<meta property="og:description" content={desc}>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="타자노트">
+<meta property="og:url" content={canonical}>
+<meta property="og:locale" content="ko_KR">
+<meta property="og:image" content="https://tajayeonseup.pages.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="타자노트">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="google-site-verification" content="bKTdkYiCnhiTp6RdazmI1-6OPP9RcWIC1dZHh-GMWSg">
+<meta name="theme-color" content="#ffffff">
+<!-- site-ui:head -->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<script type="application/ld+json" set:html={"{\"@context\":\"https://schema.org\",\"@type\":\"WebSite\",\"name\":\"타자노트\",\"alternateName\":\"타자연습\",\"url\":\"https://tajayeonseup.pages.dev/\",\"inLanguage\":\"ko-KR\",\"description\":\"설치 없이 브라우저에서 바로 하는 한글·영어 타자연습. 자리 연습부터 속담·사자성어·시 필사까지, 치면서 배우고 오타가 잦은 글쇠를 찾아 고칩니다.\"}"} />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style is:global>
+  :root{
+    --ink:#1c1c1e; --sub:#4a4a50; --mut:#8a8a91; --line:#e6e3dd; --line2:#f1efeb;
+    --bg:#fff; --soft:#f7f5f2; --accent:#8f6420; --accent-bg:#f7f1e4; --danger:#a33b2c; --ok:#2e7d4f;
+    --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:16px;line-height:1.65;letter-spacing:-.01em;
+       word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:0 20px 80px}
+
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line2);z-index:5}
+  header .wrap{padding-top:14px;padding-bottom:10px;display:flex;align-items:center}
+  header a.home{font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;letter-spacing:-.03em;display:flex;align-items:center;gap:8px}
+  header a.home svg{width:22px;height:22px}
+  nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+  nav.tabs .wrap::-webkit-scrollbar{display:none}
+  nav.tabs a{flex:0 0 auto;font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;
+             background:var(--soft);color:var(--sub);text-decoration:none}
+  nav.tabs a:hover{text-decoration:none}
+  nav.tabs a[aria-current]{background:var(--ink);color:#fff}
+
+  h1{font-size:28px;font-weight:800;line-height:1.32;letter-spacing:-.035em;margin:32px 0 10px}
+  h2{font-size:20px;font-weight:700;line-height:1.4;letter-spacing:-.03em;margin:44px 0 12px}
+  h3{font-size:17px;font-weight:700;letter-spacing:-.02em;margin:28px 0 6px}
+  p{margin:12px 0;color:var(--sub)}
+  h1+p.lead{color:var(--mut);font-size:16px;margin-bottom:28px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  b,strong{font-weight:700;color:var(--ink)}
+
+  label.f{display:block;font-size:13px;font-weight:600;color:var(--mut);margin:0 0 7px}
+  input[type=text],select{
+    width:100%;font:inherit;font-size:16px;font-weight:600;height:54px;padding:0 14px;color:var(--ink);
+    border:1px solid transparent;border-radius:14px;background:var(--soft);appearance:none;-webkit-appearance:none}
+  select{padding-right:34px;
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 7.5 10 12l4.5-4.5' stroke='%238b95a1' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;background-size:20px}
+  input:focus,select:focus{outline:none;border-color:var(--ink);background:#fff}
+  input::placeholder{color:#b8b5ae;font-weight:500}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1;min-width:0}
+  .field{margin:16px 0}
+  .hint{font-size:13px;color:var(--mut);margin:12px 0 0;line-height:1.6}
+
+  button.go{width:100%;height:54px;border:0;border-radius:14px;background:var(--ink);color:#fff;
+            font:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px}
+  button.go:disabled{opacity:.4;cursor:not-allowed}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .actions button{flex:1 1 auto;min-width:120px;min-height:48px;padding:0 16px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .actions button.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .out{margin-top:28px;scroll-margin-top:120px}
+  .out .top{padding:4px 2px 20px;text-align:center}
+  .out .cap{font-size:13px;font-weight:600;color:var(--mut);margin-bottom:6px}
+  .out .big{font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1.1}
+  .out .big em{font-style:normal;color:var(--accent)}
+  .out .sub{color:var(--sub);font-size:15px;margin-top:10px;line-height:1.6}
+  .out table{width:100%;border-collapse:collapse;font-size:15px}
+  .out td{padding:12px 2px;border-top:1px solid var(--line2);vertical-align:top}
+  .out td.n{text-align:right;white-space:nowrap;font-weight:700}
+  .note{background:var(--soft);border-radius:14px;padding:16px;font-size:14px;line-height:1.6;color:var(--sub);margin:20px 0}
+  .note b{color:var(--ink)}
+  .err{background:var(--accent-bg);color:var(--danger);border-radius:14px;padding:15px 16px;margin-top:22px;font-size:15px;font-weight:600}
+  /* 결과 화면(연습 공통) */
+  .rscore{display:flex;align-items:center;gap:18px;text-align:left!important;justify-content:center}
+  .rmascot svg{display:block;width:84px;height:84px}
+  .out .big .unit{font-size:20px;color:var(--mut);margin-left:6px;font-weight:600}
+  .rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 16px}
+  .rgrid div{background:var(--soft);border-radius:14px;padding:14px 8px;text-align:center;font-size:12px;color:var(--mut);font-weight:600}
+  .rgrid div b{display:block;font-size:22px;color:var(--ink);letter-spacing:-.03em;margin-bottom:2px}
+  .rweak{background:var(--accent-bg);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--ink);line-height:1.6;margin:0 0 6px}
+  .rweak b{display:inline-block;background:#fff;border-radius:8px;padding:2px 10px;margin:2px 4px 2px 0;font-weight:700}
+  .rweak small{color:var(--mut);font-size:12px}
+  .rweak a{font-weight:600}
+
+  article p{font-size:16px;line-height:1.78}
+  article table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px}
+  article th,article td{border-bottom:1px solid var(--line2);padding:11px 10px;text-align:left;vertical-align:top;color:var(--sub)}
+  article th{color:var(--mut);font-weight:600;font-size:13px;border-bottom:1px solid var(--line)}
+  article td b{color:var(--ink)}
+  article ul,article ol{padding-left:18px;color:var(--sub)}
+  article li{margin:7px 0}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  .cards{display:grid;gap:8px;margin:16px 0}
+  .card{display:flex;align-items:center;gap:12px;border-radius:14px;padding:16px;background:var(--soft);
+        text-decoration:none;color:var(--ink)}
+  .card:hover{background:var(--line2);text-decoration:none}
+  .card b{display:block;font-size:15px;font-weight:700;letter-spacing:-.02em}
+  .card span{color:var(--mut);font-size:13px;display:block;margin-top:2px}
+  .card i{margin-left:auto;flex:none;color:var(--mut);font-style:normal;font-size:18px;font-weight:400}
+  .card .ico{font-size:26px;flex:none;font-style:normal;margin-left:0}
+
+  footer{border-top:1px solid var(--line2);margin-top:56px;padding-top:24px}
+  footer p{color:var(--mut);font-size:13px;line-height:1.65}
+  footer nav a{color:var(--mut);font-size:13px;margin-right:16px}
+  [hidden]{display:none!important}
+</style>
+<style is:global>@import "../styles/upgrade.css";</style>
+</head>
+<body>
+<Fx />
+<header>
+  <div class="wrap"><a class="home" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#8f6420"/><rect x="7" y="8" width="18" height="16" rx="4" fill="#fff"/><rect x="10" y="11" width="4" height="3.4" rx="1" fill="#8f6420"/><rect x="16.5" y="11" width="5.5" height="3.4" rx="1" fill="#8f6420"/><rect x="10" y="17" width="12" height="3.4" rx="1" fill="#e0c48a"/></svg>타자노트</a></div>
+  <nav class="tabs" aria-label="메뉴">
+    <div class="wrap">
+      <a href="/" aria-current={path === "/" ? "page" : undefined}>오늘의 필사</a>
+      <a href="/position" aria-current={path === "/position" ? "page" : undefined}>자리 연습</a>
+      <a href="/words" aria-current={path === "/words" ? "page" : undefined}>낱말</a>
+      <a href="/short" aria-current={path === "/short" ? "page" : undefined}>짧은 글</a>
+      <a href="/long" aria-current={path === "/long" ? "page" : undefined}>긴 글</a>
+      <a href="/english" aria-current={path === "/english" ? "page" : undefined}>영어</a>
+      <a href="/record" aria-current={path === "/record" ? "page" : undefined}>내 기록</a>
+    </div>
+  </nav>
+</header>
+<main class="wrap"><slot /></main>
+<footer><div class="wrap">
+  <p>설치 없이 브라우저에서 바로 하는 타자연습입니다. 연습 글은 <b>직접 쓴 문장</b>과 <b>저작권 보호 기간이 끝난 시</b>(작가 표시)만 씁니다. 기록은 이 기기의 브라우저에만 저장되고 서버로 보내지 않습니다.</p>
+  <nav><a href="/about">소개</a><a href="/privacy">개인정보</a><a href="/contact">문의</a></nav>
+</div></footer>
+<script is:inline>document.addEventListener("focusin",e=>{const t=e.target;if(t instanceof HTMLInputElement&&t.type==="number")setTimeout(()=>t.select(),0)})</script>
+</body>
+</html>

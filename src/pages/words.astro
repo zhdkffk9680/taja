@@ -1,0 +1,39 @@
+---
+import Base from "../layouts/Base.astro";
+import Typer from "../components/Typer.astro";
+const title = "낱말 연습 — 한글 낱말 타자 | 타자노트";
+const desc = "짧은 한글 낱말을 빠르게 치는 타자연습. 띄어쓰기로 바로 다음 낱말, 끝나면 타/분·정확도와 오타가 잦은 글쇠를 알려 줍니다.";
+---
+<Base title={title} desc={desc} path="/words">
+  <h1>낱말 연습</h1>
+  <p class="lead">낱말 하나를 치고 <b>띄어쓰기</b>(또는 Enter)를 누르면 다음 낱말로 넘어갑니다.</p>
+
+  <section id="pick">
+    <div class="seg" id="cnt"><button type="button" data-n="20">20개</button><button type="button" data-n="40" class="on">40개</button><button type="button" data-n="80">80개</button></div>
+    <button type="button" class="go" id="wstart" style="margin-top:14px">시작</button>
+    <p class="hint">낱말은 300개 중에서 매번 새로 섞입니다. 받침·겹모음이 고루 섞여 있어 손가락 전체를 씁니다.</p>
+  </section>
+
+  <Typer />
+
+  <article>
+    <h2>낱말 연습이 중요한 이유</h2>
+    <p>자리 연습은 글쇠 하나씩을 익히지만, 실제 타자는 글쇠의 <b>연결</b>입니다. "학교"는 ㅎ→ㅏ→ㄱ→ㄱ→ㅛ 다섯 번의 연결이고, 자주 붙어 나오는 연결이 손에 익을수록 속도가 붙습니다. 낱말 연습은 그 연결을 가장 빨리 늘리는 방법입니다.</p>
+    <p>결과 화면에 뜨는 <b>오타가 잦았던 글쇠</b>는 틀린 낱말을 이루는 글쇠 단위로 셉니다. 특정 글쇠가 반복되면 "이 글쇠만 자리 연습하기"로 돌아가 그 글쇠를 따로 다지세요.</p>
+  </article>
+
+  <script>
+    import words from "../data/words.json";
+    const $ = (id) => document.getElementById(id);
+    let n = 40;
+    for (const b of $("cnt").querySelectorAll("button")) b.addEventListener("click", () => { for (const x of $("cnt").querySelectorAll("button")) x.classList.toggle("on", x === b); n = +b.dataset.n; });
+    const rival = Number((location.hash.match(/#t=(\d+)/) || [])[1]) || 0;
+    function go() {
+      const pool = [...new Set(words)], out = [];
+      while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      $("pick").hidden = true;
+      window.__typer.start({ mode: "words", title: `낱말 ${n}개`, sub: `낱말 ${n}개`, lines: out, preview: 4, rival, onNew: () => { $("pick").hidden = false; }, onQuit: () => { $("pick").hidden = false; } });
+    }
+    $("wstart").addEventListener("click", go);
+  </script>
+</Base>

@@ -1,0 +1,45 @@
+---
+// 잔동작·축하 효과 — 공용 부품. 정본 C:\dev\shared\site-ui\parts\Fx.astro (sync.mjs 가 복사, public/vendor/ 도 같이 채운다).
+// 무거운 라이브러리는 결과 화면에서 처음 쓸 때만 내려받는다(첫 화면 0KB).
+//   window.__fx.confetti(opts)          canvas-confetti (25KB, 지연 로드)
+//   window.__fx.mark(el, opts)          rough-notation 손그림 강조 (11KB, 지연 로드) — type: circle|underline|highlight|box
+//   window.__fx.countUp(el, to, opts)   숫자 올라가기 (0KB). opts: {from, dur, suffix, decimals}
+//   window.__fx.reduced                 사용자가 "동작 줄이기"를 켰으면 true — 효과를 건너뛴다
+---
+<script is:inline>
+  (() => {
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const loaded = {};
+    const load = (src) => loaded[src] ||= new Promise((ok, no) => {
+      const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s);
+    });
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    window.__fx = {
+      reduced,
+      async confetti(opts = {}) {
+        if (reduced) return;
+        try { await load("/vendor/confetti.browser.js"); } catch { return; }
+        const base = { particleCount: 90, spread: 70, startVelocity: 38, gravity: 1.1, ticks: 220, scalar: .95, zIndex: 50,
+          colors: ["#c8601f", "#e8a36b", "#f3d5b5", "#7a2e2e", "#2f5d50", "#18181b"], origin: { x: .5, y: .55 } };
+        window.confetti?.({ ...base, ...opts });
+      },
+      async mark(el, opts = {}) {
+        if (!el) return;
+        try { await load("/vendor/rough-notation.iife.js"); } catch { return; }
+        const a = window.RoughNotation?.annotate(el, { type: "circle", color: "#c8601f", strokeWidth: 3, padding: [4, 10], animationDuration: reduced ? 0 : 700, ...opts });
+        a?.show(); return a;
+      },
+      countUp(el, to, { from = 0, dur = 700, suffix = "", decimals = 0 } = {}) {
+        if (!el) return;
+        if (reduced) { el.textContent = to.toFixed(decimals) + suffix; return; }
+        const t0 = performance.now();
+        const step = (now) => {
+          const p = Math.min(1, (now - t0) / dur), v = from + (to - from) * ease(p);
+          el.textContent = v.toFixed(decimals) + suffix;
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      },
+    };
+  })();
+</script>

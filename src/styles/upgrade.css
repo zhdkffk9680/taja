@@ -1,0 +1,170 @@
+/* 공통 디자인 레이어 v3 — 5개 사이트가 같은 얼굴을 갖게 한다.
+ *
+ * 기준(2026-09-11 실측): Linear(linear.app), Acctual(acctual.com)
+ *   - 제목 굵기 510~600. 800 같은 가장 굵은 글씨는 쓰지 않는다 — "AI 템플릿" 느낌의 주범이었다.
+ *   - 장식이 없다. 그라데이션·색 막대·점 찍힌 알약 뱃지·번지는 그림자를 전부 뺀다.
+ *   - 구역은 1px 가는 선으로 나눈다. 강조는 색이 아니라 글자 크기와 회색 농도로 한다.
+ *   - 주인공은 제품 실물(여기서는 계산 결과 숫자)이다.
+ * v2(어두운 카드·그라데이션·뱃지)는 사용자가 "AI 티 팍팍"이라고 해서 폐기했다.
+ *
+ * 기존 스타일 **뒤에 얹는 층**이다. 구조(폭·그리드·인쇄)는 건드리지 않는다.
+ * 원본: C:\dev\shared\site-ui\upgrade.css → sync.mjs 가 각 사이트 src/styles/ 로 복사한다.
+ * ⚠️ 각 사이트에서 고치지 말 것.
+ *
+ * 지침(사용자): 깔끔·가독성 · "AI 느낌" 금지 · Pretendard · **파랑 계열 금지** · 모바일 표 3칸까지.
+ */
+
+:root{
+  /* 사이트마다 토큰 이름이 달라서(--mut/--mute, --accent/--acc) 양쪽 다 채운다. */
+  --ink:#18181b; --sub:#52525b; --mut:#8b8b93; --mute:#8b8b93;
+  --line:#e4e4e7; --line2:#efeff1; --bg:#fff; --soft:#f6f6f7;
+  --accent:#a8552f; --acc:#a8552f;
+  --accent-bg:#fbf3ee; --accs:#fbf3ee;
+  --danger:#a33b2c;
+}
+
+/* ── 바탕·헤더: 흰 바탕에 가는 선 하나 ─────────────────────────────── */
+body{ background:var(--bg); color:var(--ink); }
+header{
+  background:rgba(255,255,255,.96) !important;
+  border-bottom:1px solid var(--line2) !important;
+}
+
+/* ── 글자: 덜 굵게, 촘촘하게 ─────────────────────────────────────── */
+h1{
+  font-size:30px; font-weight:650; line-height:1.3; letter-spacing:-.03em;
+  margin-top:40px; margin-bottom:10px;
+}
+h2{ font-size:20px; font-weight:650; letter-spacing:-.025em; }
+h3{ font-size:16.5px; font-weight:650; letter-spacing:-.02em; }
+h1+p.lead, p.lead{ font-size:16px; line-height:1.7; color:var(--sub); }
+p{ color:var(--sub); }
+b,strong{ font-weight:600; color:var(--ink); }
+
+/* 돈·숫자는 자릿수가 흔들리면 못 읽는다. */
+.out, .out .big, .out td.n, table td, table th, .big, input, select{
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 제목 위 한 줄: 알약·점 없이 작은 회색 글씨로만 ─────────────────── */
+.badge{
+  display:block; margin:40px 0 0; padding:0; background:none;
+  font-size:13px; font-weight:500; letter-spacing:-.005em; color:var(--mut);
+}
+.badge + h1{ margin-top:8px; }
+
+/* ── 탭: 선택된 것만 채운다 ──────────────────────────────────────── */
+nav.tabs a, nav.cats a{
+  background:transparent; color:var(--sub); font-weight:500;
+  border:1px solid var(--line); transition:border-color .15s, color .15s;
+}
+nav.tabs a:hover, nav.cats a:hover{ border-color:#c9c9cf; color:var(--ink); }
+nav.tabs a[aria-current], nav.cats a[aria-current]{
+  background:var(--ink); color:#fff; border-color:var(--ink);
+}
+
+/* ── 입력: 흰 바탕 + 가는 선. 채운 베이지 상자를 버린다 ─────────────── */
+input[type=date],input[type=number],input[type=text],input[type=search],input[type=time],
+select,textarea,.bar input{
+  background-color:#fff; border:1px solid var(--line) !important; border-radius:10px;
+  font-weight:500; transition:border-color .15s, box-shadow .15s;
+}
+input:hover,select:hover,textarea:hover{ border-color:#c9c9cf !important; }
+input:focus,select:focus,textarea:focus,.bar input:focus{
+  border-color:var(--ink) !important; background:#fff;
+  box-shadow:0 0 0 3px rgba(24,24,27,.07);
+}
+.bar button{ border:1px solid var(--line); border-left:0; background:#fff; }
+label.f{ font-size:13px; font-weight:500; color:var(--sub); }
+.field .echo{ font-weight:600; }
+
+/* 체크 */
+.checks label, .tools label{
+  background:#fff; border:1px solid var(--line); font-weight:500; color:var(--sub);
+  transition:border-color .15s;
+}
+.checks label:hover, .tools label:hover{ border-color:#c9c9cf; }
+.checks label:has(input:checked), .tools label:has(input:checked){
+  background:var(--ink); color:#fff; border-color:var(--ink);
+}
+
+/* 손가락으로 누르는 곳은 최소 44px (애플·구글 가이드). 탭은 가로 스크롤이라 40px. */
+.checks label, .tools label, .tog{ min-height:44px; box-sizing:border-box; }
+.checks label{ display:inline-flex; align-items:center; }
+nav.tabs a, nav.cats a{ min-height:40px; display:inline-flex; align-items:center; }
+
+/* 예시(placeholder)가 실제 입력값처럼 보이면 "이미 들어가 있네" 하고 넘어간다 */
+input::placeholder, textarea::placeholder{ color:#b4b4bb; font-weight:400; opacity:1; }
+
+/* 접히는 상세 */
+details.opts{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+details.opts>summary{ font-weight:600; }
+
+/* ── 결과: 장식 없이, 숫자 크기로 주인공을 만든다 ───────────────────── */
+.out .top{
+  background:#fff; border:1px solid var(--line); border-radius:14px;
+  padding:22px 20px 20px; margin-bottom:4px;
+}
+.out .cap{ font-size:13px; font-weight:500; color:var(--mut); }
+.out .big{ font-size:40px; font-weight:650; letter-spacing:-.035em; color:var(--ink); }
+.out .big.small{ font-size:26px; }
+.out .big em{ color:var(--ink); }
+.out .sub{ color:var(--mut); font-size:13.5px; }
+.out td{ border-top-color:var(--line2); }
+.out td.n{ font-weight:600; }
+.out tr.sum td{ border-top-color:var(--line); font-weight:650; }
+.out td .law{ font-weight:400; }
+
+/* ── 카드: 가는 선, 떠오르지 않는다 ──────────────────────────────── */
+.card{
+  background:#fff; border:1px solid var(--line); border-radius:12px;
+  transition:border-color .15s;
+}
+.card:hover{ background:#fff; border-color:#b9b9c0; text-decoration:none; }
+.card b{ font-weight:600; }
+
+/* ── 안내 상자: 채움만, 선·장식 없이 ───────────────────────────────── */
+.note{ background:var(--soft); border:0; border-radius:10px; }
+.warn{ background:var(--accent-bg); border:0; border-radius:10px; }
+.warn b{ color:var(--accent); }
+.err{ border-radius:10px; }
+.quote{ border-left:2px solid var(--line); background:none; padding:2px 0 2px 14px; color:var(--sub); }
+
+/* ── 표 ───────────────────────────────────────────────────────── */
+article th{ font-weight:600; }
+
+/* ── 접근성: 키보드 초점은 반드시 보여야 한다 ────────────────────────── */
+a:focus-visible, button:focus-visible, summary:focus-visible, .ch:focus-visible{
+  outline:2px solid var(--ink); outline-offset:2px; border-radius:6px;
+}
+
+/* ── 세그먼트 선택(.seg): 연한 트랙 위에 흰 알약이 선택을 보여준다(토스 계열). 페이지에서 따로 안 꾸며도 이 모양 ─── */
+.seg{ display:flex; gap:4px; background:var(--soft); border-radius:14px; padding:4px; }
+.seg button{
+  flex:1; min-height:44px; padding:0 10px; border:0; border-radius:11px; background:transparent;
+  font:inherit; font-size:15px; font-weight:600; color:var(--sub); cursor:pointer; white-space:nowrap;
+  transition:background .15s, color .15s, box-shadow .15s;
+}
+.seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.10), 0 0 0 1px rgba(0,0,0,.03); }
+
+/* ── 잔동작(2026-09-14 업그레이드 v1 고퀄판): 전부 CSS라 0KB. 장식이 아니라 "눌렀다·맞았다·바뀌었다"를 손끝에 알리는 용도만 ─── */
+button.go:active, .actions button:active, .seg button:active, .qchoices button:not(:disabled):active, .catgrid button:active{
+  transform:scale(.985); transition:transform .08s;
+}
+@keyframes ui-pop{ 0%{transform:scale(1)} 40%{transform:scale(1.04)} 100%{transform:scale(1)} }
+@keyframes ui-shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+@keyframes ui-rise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+@keyframes ui-strike{ from{opacity:1; transform:none} to{opacity:.28; transform:scale(.97)} }
+.pop{ animation:ui-pop .32s cubic-bezier(.2,.8,.2,1); }
+.shake{ animation:ui-shake .36s ease; }
+.rise{ animation:ui-rise .45s cubic-bezier(.2,.7,.2,1) both; }
+.rise-2{ animation-delay:.08s } .rise-3{ animation-delay:.16s } .rise-4{ animation-delay:.24s } .rise-5{ animation-delay:.32s }
+.gone{ animation:ui-strike .4s ease both; }
+
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+
+@media print{
+  header{ background:#fff !important; }
+  .badge{ display:none; }
+  .out .top{ border:0; border-bottom:2px solid #000; border-radius:0; padding:0 0 12px; }
+}

@@ -1,0 +1,52 @@
+---
+import Base from "../layouts/Base.astro";
+import Typer from "../components/Typer.astro";
+const title = "짧은 글 연습 — 속담·사자성어·문장 타자 | 타자노트";
+const desc = "속담·사자성어·생활 문장으로 하는 한글 타자연습. 한 줄을 칠 때마다 뜻과 한자가 떠서 치면서 배웁니다.";
+---
+<Base title={title} desc={desc} path="/short">
+  <h1>짧은 글</h1>
+  <p class="lead">한 줄을 다 치면 <b>뜻</b>이 뜹니다. 속담 60개, 사자성어 50개, 생활 문장 50개.</p>
+
+  <section id="pick">
+    <div class="seg" id="kind"><button type="button" data-k="proverb" class="on">속담</button><button type="button" data-k="idiom">사자성어</button><button type="button" data-k="sentence">생활 문장</button><button type="button" data-k="mix">섞어서</button></div>
+    <div class="seg" id="cnt" style="margin-top:8px"><button type="button" data-n="5">5줄</button><button type="button" data-n="10" class="on">10줄</button><button type="button" data-n="20">20줄</button></div>
+    <button type="button" class="go" id="sstart" style="margin-top:14px">시작</button>
+    <p class="hint" id="skhint">속담: 뜻이 함께 뜹니다. 문장부호와 띄어쓰기까지 정확히.</p>
+  </section>
+
+  <Typer />
+
+  <article>
+    <h2>왜 속담과 사자성어인가요</h2>
+    <p>타자 연습 글은 대개 아무 뜻 없는 문장입니다. 그 시간에 <b>속담 하나, 사자성어 하나</b>를 같이 익히면 손도 머리도 남습니다. 사자성어는 한자와 풀이를, 속담은 쓰임을 함께 보여 줍니다. 초등·중등 국어에 나오는 것 위주로 골랐습니다.</p>
+    <p>생활 문장은 직접 쓴 것만 씁니다. 다른 사이트의 문장을 가져오지 않습니다.</p>
+    <h2>문장부호는 이렇게</h2>
+    <p>마침표·쉼표·물음표도 한 글자로 세어 정확도에 들어갑니다. 실제 글쓰기에서 문장부호가 자연스럽게 나오게 하려는 것입니다. 물음표(?)는 Shift + / 입니다.</p>
+  </article>
+
+  <script>
+    import proverbs from "../data/proverbs.json";
+    import idioms from "../data/idioms.json";
+    import sentences from "../data/sentences.json";
+    const $ = (id) => document.getElementById(id);
+    const HINT = { proverb: "속담: 뜻이 함께 뜹니다. 문장부호와 띄어쓰기까지 정확히.", idiom: "사자성어: 네 글자를 치면 한자와 풀이가 뜹니다.", sentence: "생활 문장: 직접 쓴 문장. 문장부호까지 정확히.", mix: "셋을 섞어서 냅니다." };
+    const NAME = { proverb: "속담", idiom: "사자성어", sentence: "생활 문장", mix: "속담·사자성어·문장" };
+    let kind = "proverb", n = 10;
+    const seg = (id, cb) => { for (const b of $(id).querySelectorAll("button")) b.addEventListener("click", () => { for (const x of $(id).querySelectorAll("button")) x.classList.toggle("on", x === b); cb(b.dataset); }); };
+    seg("kind", (d) => { kind = d.k; $("skhint").textContent = HINT[kind]; });
+    seg("cnt", (d) => { n = +d.n; });
+    const rival = Number((location.hash.match(/#t=(\d+)/) || [])[1]) || 0;
+    const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const items = (k) => k === "proverb" ? proverbs.map((x) => ({ t: x.t, n: `<b>속담</b> · ${x.m}` }))
+      : k === "idiom" ? idioms.map((x) => ({ t: x.t, n: `<b>${x.h}</b> · ${x.m}` }))
+      : sentences.map((x) => ({ t: x, n: null }));
+    function go() {
+      const pool = kind === "mix" ? [...items("proverb"), ...items("idiom"), ...items("sentence")] : items(kind);
+      const set = shuffle(pool).slice(0, n);
+      $("pick").hidden = true;
+      window.__typer.start({ mode: "short", title: `${NAME[kind]} ${n}줄`, sub: `${NAME[kind]} ${n}줄`, lines: set.map((x) => x.t), notes: set.map((x) => x.n), rival, onNew: () => { $("pick").hidden = false; }, onQuit: () => { $("pick").hidden = false; } });
+    }
+    $("sstart").addEventListener("click", go);
+  </script>
+</Base>

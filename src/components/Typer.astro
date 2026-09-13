@@ -1,0 +1,221 @@
+---
+// 타자 연습 화면(공용). 페이지가 window.__typer.start({...}) 를 부르면 줄 단위로 받아 치게 하고, 끝나면 결과·카드·기록까지 처리한다.
+//   start({ mode, title, sub, lines, notes, preview, keyboard, rival, onNew })
+//     mode     기록 구분(record.mjs MODES 키)      lines  칠 줄들(낱말 모드면 낱말 하나가 한 줄)
+//     notes    줄마다 끝난 뒤 보여줄 뜻·출처(배움)   preview 다음 줄 미리보기 개수(기본 1, 낱말은 4)
+//     keyboard 화면 자판에 다음 글쇠 비추기         rival  친구 기록(타/분) — 결과에서 비교
+//     onNew    "다른 글" 버튼 → 페이지가 새 글을 고른다
+import ShareCard from "./ShareCard.astro";
+---
+<section id="typer" hidden>
+  <div class="tbar">
+    <span id="tprog">1 / 1</span>
+    <span><b id="tcpm">0</b> 타/분</span>
+    <span><b id="tacc">100</b>%</span>
+    <span id="ttime">0:00</span>
+  </div>
+  <div class="tnote" id="tnote" hidden></div>
+  <div class="tpaper">
+    <div class="ttarget" id="ttarget" aria-live="off"></div>
+    <input id="tinput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="여기에 입력 (Enter로 다음 줄)" aria-label="입력">
+    <div class="tnext" id="tnext"></div>
+  </div>
+  <div class="kb" id="tkb" hidden></div>
+  <p class="hint" id="thint">첫 글쇠를 누르면 시간이 시작됩니다. 틀린 글자는 <span class="bad">이렇게</span> 표시되고, 지우고 다시 칠 수 있습니다.</p>
+  <div class="actions"><button type="button" id="tquit">그만두기</button></div>
+</section>
+
+<section id="tout" class="out" hidden>
+  <div class="top rscore">
+    <div class="rmascot" id="rmascot"></div>
+    <div>
+      <div class="cap" id="rcap">결과</div>
+      <div class="big"><em id="rcpm">0</em><span class="unit">타/분</span></div>
+      <div class="sub" id="rsub"></div>
+    </div>
+  </div>
+  <div class="rgrid">
+    <div><b id="racc">0%</b>정확도</div>
+    <div><b id="rtime">0:00</b>걸린 시간</div>
+    <div><b id="rstrokes">0</b>타수</div>
+  </div>
+  <div class="rweak" id="rweak" hidden></div>
+  <ShareCard brand="타자노트 · 치면서 배우는 타자연습" color="#8f6420" file="taja-result.png" />
+  <div class="actions"><button type="button" class="pri" id="tretry">같은 글 다시</button><button type="button" id="tnew">다른 글</button></div>
+</section>
+
+<style is:global>
+  .tbar{display:flex;gap:14px;font-size:13px;color:var(--mut);font-weight:600;margin:0 0 10px;align-items:baseline}
+  .tbar b{color:var(--ink);font-size:16px;font-weight:800;letter-spacing:-.02em}
+  .tbar span:first-child{margin-right:auto}
+  .tnote{background:var(--accent-bg);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--ink);margin:0 0 10px;line-height:1.55}
+  .tnote small{display:block;color:var(--mut);font-size:12px;margin-bottom:2px}
+  .tpaper{background:var(--soft);border-radius:16px;padding:18px 18px 14px}
+  .ttarget{font-size:22px;line-height:1.7;font-weight:600;letter-spacing:0;color:var(--ink);min-height:38px;word-break:keep-all;overflow-wrap:anywhere}
+  .ttarget i{font-style:normal;border-radius:3px;white-space:pre-wrap}
+  #typer,#tout{scroll-margin-top:120px}
+  .ttarget i.ok{color:var(--mut)}
+  .ttarget i.bad,.bad{color:#fff;background:var(--danger)}
+  .ttarget i.pend{background:#f0dfb8}
+  .ttarget i.cur{box-shadow:0 2px 0 var(--accent)}
+  .ttarget i.sp.bad{background:var(--danger);opacity:.6}
+  #tinput{margin-top:12px;background:#fff;height:52px;font-size:20px;font-weight:600;letter-spacing:0}
+  .tnext{font-size:15px;color:var(--mut);margin-top:12px;line-height:1.6;min-height:22px}
+  .tnext span{display:inline-block;margin-right:10px}
+  .tnext span.w{background:#fff;border-radius:8px;padding:2px 10px;margin:4px 6px 0 0;font-weight:600}
+  #bestlabel{display:inline-block}
+</style>
+
+<script>
+  import { keysOf, strokes, isPrefixOf, codeOf, JAMO_KEY, FINGER_NAME, FINGER, KEY_JAMO, SHIFT_JAMO } from "../lib/hangul.mjs";
+  import { renderKeyboard, highlight, KEYBOARD_CSS } from "../lib/keyboard.mjs";
+  import { addRun, MODES } from "../lib/record.mjs";
+  import { mascot } from "../lib/mascot.mjs";
+
+  const $ = (id) => document.getElementById(id);
+  const replay = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const style = document.createElement("style"); style.textContent = KEYBOARD_CSS; document.head.appendChild(style);
+
+  let o = null, idx = 0, t0 = 0, timer = 0, composing = false, errors = {}, okChars = 0, badChars = 0, okStrokes = 0, done = false, lastResult = null;
+  const input = $("tinput"), target = $("ttarget");
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const elapsed = () => t0 ? (performance.now() - t0) / 1000 : 0;
+  const cpmNow = () => { const m = elapsed() / 60; return m > 0.02 ? Math.round(okStrokes / m) : 0; };
+  const label = (code) => (KEY_JAMO[code] ? `${KEY_JAMO[code]}${SHIFT_JAMO[code] ? "/" + SHIFT_JAMO[code] : ""}` : code.replace("Key", "").replace("Space", "띄어쓰기"));
+
+  function line() { return o.lines[idx]; }
+  function render() {
+    const tgt = line(), val = input.value;
+    const html = [...tgt].map((ch, i) => {
+      let cls = "";
+      if (i < val.length) {
+        if (val[i] === ch) cls = "ok";
+        else if (i === val.length - 1 && composing && isPrefixOf(val[i], ch)) cls = "pend";
+        else cls = "bad";
+      } else if (i === val.length) cls = "cur";
+      if (ch === " ") cls += " sp";
+      return `<i class="${cls}">${ch.replace("<", "&lt;")}</i>`;
+    }).join("");
+    target.innerHTML = html + (val.length > tgt.length ? `<i class="bad">${val.slice(tgt.length).replace(/</g, "&lt;")}</i>` : "");
+    $("tprog").textContent = `${idx + 1} / ${o.lines.length}`;
+    const pv = o.preview ?? 1;
+    $("tnext").innerHTML = o.lines.slice(idx + 1, idx + 1 + pv).map((l) => `<span class="${pv > 1 ? "w" : ""}">${l.replace(/</g, "&lt;")}</span>`).join("");
+    if (o.keyboard) {
+      // 다음에 칠 글쇠: 조합 중인 글자면 그 다음 자모, 아니면 다음 글자의 첫 자모
+      let j = null;
+      const i = composing ? val.length - 1 : val.length;
+      const ch = tgt[i];
+      if (ch != null) {
+        const keys = keysOf(ch);
+        const typed = composing && isPrefixOf(val[i], ch) ? keysOf(val[i]).length : 0;
+        j = keys[Math.min(typed, keys.length - 1)];
+      }
+      const code = j == null ? null : codeOf(j);
+      highlight($("tkb"), code, !!(j && JAMO_KEY[j]?.shift) || /^[A-Z]$/.test(j || ""));
+    }
+    liveStats();
+  }
+  function liveStats() {
+    const val = input.value, tgt = line();
+    let cur = 0; for (let i = 0; i < Math.min(val.length, tgt.length); i++) { if (val[i] === tgt[i]) cur += strokes(tgt[i]); else break; }
+    const okS = okStrokes + cur, m = elapsed() / 60;
+    $("tcpm").textContent = m > 0.02 ? Math.round(okS / m) : 0;
+    const total = okChars + badChars; $("tacc").textContent = total ? Math.round(okChars / total * 100) : 100;
+    $("ttime").textContent = fmt(elapsed());
+  }
+  function commit() {
+    const tgt = line(), val = input.value;
+    let ok = 0, bad = 0;
+    [...tgt].forEach((ch, i) => {
+      if (val[i] === ch) { ok++; okStrokes += strokes(ch); }
+      else { bad++; for (const j of keysOf(ch)) { const c = codeOf(j); if (c) errors[c] = (errors[c] || 0) + 1; } }
+    });
+    bad += Math.max(0, val.length - tgt.length);
+    okChars += ok; badChars += bad;
+    const note = o.notes?.[idx];
+    if (note) { $("tnote").innerHTML = `<small>${tgt.replace(/</g, "&lt;")}</small>${note}`; $("tnote").hidden = false; replay($("tnote"), "rise"); }
+    idx++; input.value = "";
+    if (idx >= o.lines.length) finish(); else render();
+  }
+  function finish() {
+    done = true; clearInterval(timer);
+    const secs = Math.max(1, elapsed()), cpm = Math.round(okStrokes / (secs / 60)), total = okChars + badChars, acc = total ? Math.round(okChars / total * 100) : 100;
+    const weak = Object.entries(errors).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const { best, isBest } = addRun({ mode: o.mode, cpm, acc, strokes: okStrokes, secs: Math.round(secs), errors });
+    $("typer").hidden = true; $("tout").hidden = false; replay($("tout"), "rise");
+    const mood = acc >= 95 ? "happy" : acc < 80 ? "sad" : "idle";
+    $("rmascot").innerHTML = mascot(mood, 84);
+    $("rcap").textContent = `${MODES[o.mode]} · ${o.sub || ""}`;
+    window.__fx?.countUp($("rcpm"), cpm, { dur: 900 });
+    const vs = o.rival ? (cpm > o.rival ? `친구 ${o.rival}타보다 빨라요!` : cpm < o.rival ? `친구 ${o.rival}타가 더 빨랐어요.` : `친구와 똑같이 ${o.rival}타!`) : "";
+    $("rsub").innerHTML = `<span id="bestlabel">${isBest ? (best ? `이 기기 최고 기록 경신! (전 ${best}타)` : "첫 기록") : `이 기기 최고 ${best}타`}</span>${vs ? " · " + vs : ""}`;
+    $("racc").textContent = `${acc}%`; $("rtime").textContent = fmt(secs); $("rstrokes").textContent = okStrokes;
+    if (weak.length) {
+      $("rweak").innerHTML = `오타가 잦았던 글쇠: ${weak.map(([c, n]) => `<b>${label(c)} <small>${FINGER_NAME[FINGER[c]] || ""} · ${n}번</small></b>`).join("")}<br><a href="/position?keys=${weak.map(([c]) => c).join(",")}">이 글쇠만 자리 연습하기 →</a>`;
+      $("rweak").hidden = false;
+    } else { $("rweak").innerHTML = `오타 없이 다 쳤어요. <small>다음엔 조금 더 빠르게.</small>`; $("rweak").hidden = false; }
+    if (isBest && best) setTimeout(() => { window.__fx?.mark($("bestlabel"), { type: "circle", color: "#8f6420", padding: [2, 6] }); window.__fx?.confetti({ particleCount: 70, spread: 65, origin: { x: .5, y: .35 }, colors: ["#8f6420", "#e0c48a", "#f7f1e4", "#6e4b14", "#2e7d4f", "#18181b"] }); }, 900);
+    else if (o.rival && cpm > o.rival) setTimeout(() => window.__fx?.confetti({ particleCount: 60, spread: 60, origin: { x: .5, y: .35 }, colors: ["#8f6420", "#e0c48a", "#f7f1e4", "#18181b"] }), 900);
+    lastResult = { cpm, acc, secs, errors: { ...errors }, mood };
+    window.__shareCard?.({ title: `${MODES[o.mode]} · ${o.title}`, big: `${cpm}타`, sub: `분당 ${cpm}타 · 정확도 ${acc}%`,
+      lines: [`${fmt(secs)} 동안 ${okStrokes}타 · ${o.sub || ""}`.trim(), vs].filter(Boolean), decorate: decorate(lastResult),
+      link: { url: `${location.origin}${location.pathname}#t=${cpm}`, text: `${MODES[o.mode]} ${cpm}타/분. 너는 몇 타?` } });
+    $("tout").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  // 결과 카드 장식: 마스코트 + 자판 열지도(오타 글쇠가 진하게)
+  const ROWS = [["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"],["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL"],["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM"]];
+  const decorate = (r) => async (x, h) => {
+    await h.svg(mascot(r.mood, 100), h.panel.x + h.panel.w - 300, h.panel.y + 140, 230, 230);
+    const max = Math.max(1, ...Object.values(r.errors)), kw = 66, gap = 10, y0 = h.panel.y + h.panel.h - 400;
+    x.textAlign = "center";
+    ROWS.forEach((row, ri) => {
+      const w = row.length * (kw + gap) - gap, x0 = h.panel.x + (h.panel.w - w) / 2 + ri * 22;
+      row.forEach((code, i) => {
+        const X = x0 + i * (kw + gap), Y = y0 + ri * (kw + gap), n = r.errors[code] || 0;
+        x.fillStyle = n ? `rgba(200,69,31,${0.18 + 0.7 * n / max})` : "#f1eee8";
+        x.beginPath(); x.roundRect(X, Y, kw, kw, 12); x.fill();
+        x.fillStyle = n ? "#fff" : "#8b8b93"; x.font = h.font(600, 26); x.fillText(KEY_JAMO[code], X + kw / 2, Y + kw / 2 + 9);
+      });
+    });
+    x.fillStyle = "#8b8b93"; x.font = h.font(500, 24); x.fillText("오타가 잦았던 글쇠일수록 진하게", h.panel.x + h.panel.w / 2, y0 + 3 * (kw + gap) + 30);
+    x.textAlign = "left";
+  };
+
+  input.addEventListener("compositionstart", () => { composing = true; });
+  input.addEventListener("compositionend", () => { composing = false; render(); maybeAuto(); });
+  input.addEventListener("input", () => {
+    if (done || !o) return;
+    if (!t0) { t0 = performance.now(); timer = setInterval(liveStats, 250); }
+    render(); maybeAuto();
+  });
+  function maybeAuto() { // 줄을 정확히 다 치면 Enter 없이 넘어간다. 낱말 모드는 띄어쓰기로도(휴대폰 자판은 keydown 이 229 라 여기서 잡는다)
+    if (composing) return;
+    const tgt = line();
+    if (o.preview > 1 && !tgt.includes(" ") && input.value.endsWith(" ")) { input.value = input.value.trimEnd(); if (input.value.length) commit(); else render(); return; }
+    if (input.value === tgt) setTimeout(() => { if (!composing && input.value === tgt) commit(); }, 30);
+  }
+  input.addEventListener("keydown", (e) => {
+    if (!o || done) return;
+    if ((e.key === "Enter" || (o.preview > 1 && e.key === " " && !line().includes(" "))) && !e.isComposing && e.keyCode !== 229) {
+      e.preventDefault(); if (input.value.length) commit();
+    }
+  });
+  $("tquit").addEventListener("click", () => { hide(); o?.onQuit?.(); });
+  $("tretry").addEventListener("click", () => start({ ...o }));
+  $("tnew").addEventListener("click", () => { hide(); o?.onNew?.(); });
+
+  function hide() { clearInterval(timer); $("typer").hidden = true; $("tout").hidden = true; window.__shareCard?.(null); }
+  function start(opts) {
+    o = opts; idx = 0; t0 = 0; composing = false; errors = {}; okChars = 0; badChars = 0; okStrokes = 0; done = false;
+    clearInterval(timer);
+    $("tout").hidden = true; window.__shareCard?.(null);
+    $("typer").hidden = false; $("tnote").hidden = true; input.value = "";
+    input.placeholder = o.preview > 1 ? "여기에 입력 (띄어쓰기로 다음 낱말)" : "여기에 입력 (Enter로 다음 줄)";
+    if (o.keyboard) { renderKeyboard($("tkb"), { lang: o.lang || "ko" }); $("tkb").hidden = false; } else $("tkb").hidden = true;
+    render(); $("ttime").textContent = "0:00"; $("tcpm").textContent = "0"; $("tacc").textContent = "100";
+    replay($("typer"), "rise");
+    $("typer").scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => input.focus({ preventScroll: true }), 50);
+  }
+  window.__typer = { start, hide };
+</script>
