@@ -104,7 +104,8 @@ const { brand = "결과", color = "#c8601f", file = "result.png" } = Astro.props
   cp.addEventListener("click", async () => {
     if (!last) return;
     const text = `${last.title}\n${last.big || (last.bigParts || []).map((p) => p.t).join("")} ${last.sub}\n${(last.lines || []).join("\n")}`;
-    try { await navigator.clipboard.writeText(text); cp.textContent = "복사됨!"; setTimeout(() => (cp.textContent = "결과 글로 복사"), 1200); } catch {}
+    // 토스 웹뷰는 웹 클립보드가 막히거나 무응답일 수 있다 — 주입된 SDK 경로(window.__tossCopy)를 먼저 쓴다.
+    try { await (window.__tossCopy ? window.__tossCopy(text) : navigator.clipboard.writeText(text)); cp.textContent = "복사됨!"; setTimeout(() => (cp.textContent = "결과 글로 복사"), 1200); } catch {}
   });
   const sl = $("share-link");
   sl.addEventListener("click", async () => {
