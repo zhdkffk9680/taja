@@ -1,0 +1,64 @@
+/* 타자노트 테마 — 「기계식 키보드 키캡」 (2026-09-17)
+ * upgrade.css(공용, 고치지 않음) 뒤에 얹는다. 타자노트는 PC 웹 전용.
+ * 색: 레트로 베이지 키보드(아이보리 키캡 + 회갈색 기능키) + 원래 갈색 포인트(#8f6420). 파랑·보라 없음.
+ * 수법: 조각된 키캡(윗면 오목·옆면 두께·눌리면 가라앉음) — 글자판·버튼·기록 달력까지 전부 키캡 한 벌. 소리도 키캡(합성 딸깍).
+ *       (다른 사이트: 잡음·칸선·나뭇결·테이프·안개·잉크 도장·영수증·라벨 프린터·계기판·도면·고무도장·열쇠 꼬리표·편지 봉투)
+ * 서체: 제목·큰 숫자 Sunflower(OFL), 나머지는 기존 글꼴.
+ */
+:root{
+  --ink:#2a2824; --sub:#514d45; --mut:#8b857a; --line:#d8d2c5; --line2:#e6e1d6;
+  --bg:#e8e3d8; --soft:#f1ede4; --accent:#8f6420; --accent-bg:#f3e9d4;
+  --cap:#f8f5ee; --capside:#cfc7b6; --mod:#8a8578; --modside:#6b665b;
+  --sun:"Sunflower",var(--font);
+}
+body{ background:var(--bg); }
+header{ background:rgba(232,227,216,.95) !important; border-bottom:1px solid var(--line) !important; }
+header .wrap{ gap:10px; }
+h1, .out .big, .tcard b{ font-family:var(--sun); font-weight:700 !important; }
+
+/* 공통 키캡 */
+nav.tabs a, .actions button, button.go, .soundbtn, .card, .calhead button{
+  background:var(--cap) !important; color:var(--ink) !important; border:0 !important;
+  box-shadow:inset 0 -4px 0 var(--capside), inset 0 0 0 1px rgba(0,0,0,.06), 0 1px 0 rgba(0,0,0,.08) !important;
+  transition:transform .06s, box-shadow .06s; }
+nav.tabs a:active, .actions button:active, button.go:active, .soundbtn:active, .calhead button:active{
+  transform:translateY(3px); box-shadow:inset 0 -1px 0 var(--capside), inset 0 0 0 1px rgba(0,0,0,.08) !important; }
+nav.tabs a{ border-radius:8px !important; padding-bottom:10px !important; }
+nav.tabs a[aria-current], .actions button.pri, button.go{
+  background:var(--mod) !important; color:#fbf8f1 !important; box-shadow:inset 0 -4px 0 var(--modside), 0 1px 0 rgba(0,0,0,.1) !important; }
+.actions button, button.go{ border-radius:10px !important; }
+.soundbtn{ margin-left:auto; min-height:40px; padding:0 12px 3px; border-radius:8px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.soundbtn[aria-pressed="true"]{ background:var(--accent) !important; color:#fff8ea !important; box-shadow:inset 0 -4px 0 #6a4816 !important; }
+
+/* 글자판(keyboard.mjs가 그리는 .key) — 조각 키캡 */
+.key:not([style*="--heat"]){ background:linear-gradient(var(--cap), #efeadf) !important; }
+.key{ border:0 !important; border-radius:9px !important;
+  box-shadow:inset 0 -5px 0 var(--capside), inset 0 0 0 1px rgba(0,0,0,.07), 0 2px 2px -1px rgba(0,0,0,.15) !important; padding-bottom:4px; }
+.key.mod, .key.space{ background:linear-gradient(#9a9588, var(--mod)) !important; color:#fbf8f1 !important; box-shadow:inset 0 -5px 0 var(--modside) !important; }
+.key.next{ background:linear-gradient(#a57733, var(--accent)) !important; color:#fff !important; box-shadow:inset 0 -5px 0 #5f4213 !important; transform:translateY(-1px); }
+.key.hit{ animation:capdown .16s !important; }
+@keyframes capdown{ 0%{ transform:translateY(3px); box-shadow:inset 0 -1px 0 var(--capside) } 100%{ transform:none } }
+
+/* 연습 종이 = 키보드 하우징 */
+.tpaper{ background:var(--cap) !important; border-radius:14px !important; box-shadow:inset 0 0 0 1px var(--line), 0 10px 20px -16px rgba(40,30,10,.5); }
+.rgrid div{ background:var(--cap) !important; box-shadow:inset 0 -4px 0 var(--capside) !important; border-radius:10px !important; }
+.rgrid div b{ font-family:var(--sun); }
+.best div{ background:var(--cap) !important; box-shadow:inset 0 -4px 0 var(--capside); border-radius:10px !important; }
+.tcard{ background:var(--accent-bg) !important; }
+.note, .rweak{ background:var(--cap) !important; }
+
+/* 연습 달력 */
+.calhead{ display:flex; align-items:center; gap:10px; margin:6px 0 12px; }
+.calhead b{ flex:1; text-align:center; font-family:var(--sun); font-size:18px; }
+.calhead button{ width:48px; height:44px; border-radius:8px; font-size:22px; cursor:pointer; }
+.calhead button:disabled{ opacity:.35; cursor:default; }
+.cal{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:6px; }
+.cal .w{ font-style:normal; text-align:center; font-size:12px; color:var(--mut); font-weight:700; }
+.cal .cap{ position:relative; aspect-ratio:1/.9; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:var(--sub); background:var(--cap); box-shadow:inset 0 -5px 0 var(--capside), inset 0 0 0 1px rgba(0,0,0,.06); padding-bottom:4px; }
+.cal .cap small{ font-size:10px; font-weight:600; color:inherit; opacity:.85; }
+.cal .cap.on{ color:#fff8ea; transform:translateY(3px);
+  background:color-mix(in srgb, var(--accent) calc(45% + var(--lv) * 55%), #d9c29a);
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.25) !important; }
+.cal .cap.today{ outline:2px solid var(--ink); outline-offset:1px; }
+footer{ border-top-color:var(--line) !important; }

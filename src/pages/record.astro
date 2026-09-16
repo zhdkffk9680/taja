@@ -19,6 +19,11 @@ const desc = "모드별 최고 기록과 최근 연습, 주간 연습량, 오타
     <div class="week" id="week"></div>
     <p class="hint">막대 하나가 하루, 높이는 그날 맞게 친 타수입니다.</p>
 
+    <h2>연습 달력</h2>
+    <div class="calhead"><button type="button" id="calPrev" aria-label="지난달">‹</button><b id="calTitle"></b><button type="button" id="calNext" aria-label="다음 달">›</button></div>
+    <div class="cal" id="cal"></div>
+    <p class="hint">연습한 날의 글쇠가 눌려 있고, 많이 칠수록 진합니다. 숫자는 그날 맞게 친 타수입니다.</p>
+
     <h2>오타가 잦은 글쇠</h2>
     <div class="kb" id="heat"></div>
     <p class="hint">진할수록 오타가 많았던 글쇠. 누적 기록 기준입니다.</p>
@@ -73,6 +78,27 @@ const desc = "모드별 최고 기록과 최근 연습, 주간 연습량, 오타
       const cells = []; const d = new Date(); d.setDate(d.getDate() - 13);
       let max = 1; for (let i = 0; i < 14; i++) { const k = todayStr(d); cells.push({ k, v: r.days[k] || 0, day: d.getDate() }); max = Math.max(max, r.days[k] || 0); d.setDate(d.getDate() + 1); }
       $("week").innerHTML = cells.map((c) => `<div class="${c.v ? "on" : ""}${c.k === todayStr() ? " today" : ""}" style="height:${Math.max(3, c.v / max * 100)}%">${c.v ? `<em>${c.v >= 1000 ? (c.v / 1000).toFixed(1) + "k" : c.v}</em>` : ""}<i>${c.day}</i></div>`).join("");
+      // 연습 달력 — 한 달을 키캡 격자로. 연습한 날은 눌린 글쇠, 타수가 많을수록 진하게
+      const maxDay = Math.max(1, ...Object.values(r.days));
+      const now = new Date(); let cy = now.getFullYear(), cm = now.getMonth();
+      function cal() {
+        $("calTitle").textContent = `${cy}년 ${cm + 1}월`;
+        const first = new Date(cy, cm, 1).getDay(), last = new Date(cy, cm + 1, 0).getDate();
+        let h = ["일", "월", "화", "수", "목", "금", "토"].map((w) => `<i class="w">${w}</i>`).join("") + "<i class=\"blank\"></i>".repeat(first);
+        let practiced = 0;
+        for (let day = 1; day <= last; day++) {
+          const k = todayStr(new Date(cy, cm, day)), v = r.days[k] || 0;
+          if (v) practiced++;
+          h += `<span class="cap${v ? " on" : ""}${k === todayStr() ? " today" : ""}" style="--lv:${(v / maxDay).toFixed(2)}" title="${k} ${v}타">${day}${v ? `<small>${v >= 1000 ? (v / 1000).toFixed(1) + "k" : v}</small>` : ""}</span>`;
+        }
+        $("cal").innerHTML = h;
+        $("calTitle").textContent += ` · ${practiced}일 연습`;
+        const nextDisabled = cy > now.getFullYear() || (cy === now.getFullYear() && cm >= now.getMonth());
+        $("calNext").disabled = nextDisabled;
+      }
+      $("calPrev").addEventListener("click", () => { cm--; if (cm < 0) { cm = 11; cy--; } cal(); });
+      $("calNext").addEventListener("click", () => { cm++; if (cm > 11) { cm = 0; cy++; } cal(); });
+      cal();
       // 열지도
       const weak = weakKeys(r, 5), maxW = Math.max(1, ...Object.values(r.weak));
       const heat = {}; for (const [c, n] of Object.entries(r.weak)) heat[c] = n / maxW;
