@@ -6,7 +6,7 @@
  * 서체: 제목·큰 숫자 Sunflower(OFL), 나머지는 기존 글꼴.
  */
 :root{
-  --ink:#2a2824; --sub:#514d45; --mut:#8b857a; --line:#d8d2c5; --line2:#e6e1d6;
+  --ink:#2a2824; --sub:#514d45; --mut:#66625a; --line:#d8d2c5; --line2:#e6e1d6;
   --bg:#e8e3d8; --soft:#f1ede4; --accent:#8f6420; --accent-bg:#f3e9d4;
   --cap:#f8f5ee; --capside:#cfc7b6; --mod:#8a8578; --modside:#6b665b;
   --sun:"Sunflower",var(--font);
